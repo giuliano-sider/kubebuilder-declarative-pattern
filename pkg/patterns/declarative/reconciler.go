@@ -328,6 +328,14 @@ func (r *Reconciler) injectOwnerRef(ctx context.Context, instance DeclarativeObj
 	log.WithValues("object", fmt.Sprintf("%s/%s", instance.GetName(), instance.GetNamespace())).Info("injecting owner references")
 
 	for _, o := range objects.Items {
+		// We cannot set ownerref for those cluster-scoped resources
+		// including: clusterrolebindings, clusterroles.
+		// More information:
+		// - https://kubernetes.io/docs/concepts/workloads/controllers/garbage-collection/#owners-and-dependents
+		if o.Kind == "ClusterRole" || o.Kind == "ClusterRoleBinding" {
+			continue
+		}
+
 		owner, err := r.options.ownerFn(ctx, instance, *o, *objects)
 		if err != nil {
 			log.WithValues("object", o).Error(err, "resolving owner ref", o)
