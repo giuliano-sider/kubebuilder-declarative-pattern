@@ -1,4 +1,4 @@
-module github.com/erain/kubebuilder-declarative-pattern
+module github.com/giuliano-sider/kubebuilder-declarative-pattern
 
 go 1.12
 

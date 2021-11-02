@@ -173,6 +173,11 @@ func (r *Reconciler) reconcileExists(ctx context.Context, name types.NamespacedN
 		}
 
 		extraArgs = append(extraArgs, "--prune", "--selector", strings.Join(labels, ","))
+		for _, gvk := range r.options.pruneWhitelist {
+			extraArgs = append(extraArgs,
+				"--prune-whitelist",
+				fmt.Sprintf("%s/%s/%s", gvk.Group, gvk.Version, gvk.Kind))
+		}
 	}
 
 	ns := ""
@@ -287,6 +292,12 @@ func (r *Reconciler) applyOptions(opts ...reconcilerOption) error {
 		params = opt(params)
 	}
 
+	for i := range params.pruneWhitelist {
+		if params.pruneWhitelist[i].Group == "" {
+			params.pruneWhitelist[i].Group = "core"
+		}
+	}
+
 	// Default the manifest controller if not set
 	if params.manifestController == nil && DefaultManifestLoader != nil {
 		loader, err := DefaultManifestLoader()
@@ -305,7 +316,12 @@ func (r *Reconciler) validateOptions() error {
 	var errs []string
 
 	if r.options.prune && r.options.labelMaker == nil {
-		errs = append(errs, "WithApplyPrune must be used with the WithLabels option")
+		errs = append(errs, "WithApplyPrune and WithApplyPruneWhitelist must be used with the WithLabels option")
+	}
+	for _, gvk := range r.options.pruneWhitelist {
+		if gvk.Group == "" || gvk.Version == "" || gvk.Kind == "" {
+			errs = append(errs, fmt.Sprintf("Incomplete GroupVersionKind was specified as part of the prune whitelist: %q", gvk))
+		}
 	}
 
 	if r.options.manifestController == nil {

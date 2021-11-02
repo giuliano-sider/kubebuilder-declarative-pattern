@@ -44,6 +44,7 @@ type reconcilerParams struct {
 	manifestController    ManifestController
 
 	prune             bool
+	pruneWhitelist    []schema.GroupVersionKind
 	preserveNamespace bool
 	kustomize         bool
 	validate          bool
@@ -117,6 +118,21 @@ func WithManifestController(mc ManifestController) reconcilerOption {
 func WithApplyPrune() reconcilerOption {
 	return func(p reconcilerParams) reconcilerParams {
 		p.prune = true
+		return p
+	}
+}
+
+// WithApplyPruneWhitelist turns on the --prune behavior of kubectl apply, and also
+// takes a list of GroupVersionKind that will each be passed as --prune-whitelist
+// arguments to kubectl apply, overriding the default prune whitelist used by that command.
+// An empty list implies that the default prune whitelist will be used. Check the
+// kubectl code for a specific version to know what that is, as kubectl apply --prune
+// is an alpha feature which is not completely documented.
+// For an example (kubectl v1.20.7), see https://github.com/kubernetes/kubernetes/blob/132a687512d7fb058d0f5890f07d4121b3f0a2e2/staging/src/k8s.io/kubectl/pkg/cmd/apply/prune.go#L177
+func WithApplyPruneWhitelist(pruneWhitelist []schema.GroupVersionKind) reconcilerOption {
+	return func(p reconcilerParams) reconcilerParams {
+		p.prune = true
+		p.pruneWhitelist = pruneWhitelist
 		return p
 	}
 }
